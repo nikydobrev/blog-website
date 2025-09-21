@@ -1,0 +1,86 @@
+---
+import { type CollectionEntry, getCollection, render } from 'astro:content';
+import BlogPost from '../../layouts/BlogPost.astro';
+import { calculateReadingTimeFromHtml } from '../../lib/reading';
+import { client } from '../../sanity.ts';
+import { PortableText } from 'astro-portabletext';
+import SanityImage from '../../components/SanityImage.astro';
+import SanityCode from '../../components/SanityCode.astro';
+
+export async function getStaticPaths() {
+	const posts = await client.fetch(`
+    *[_type == "post"] {
+      "slug": slug.current,
+      title,
+      publishedAt,
+      description,
+      mainImage,
+      author->{
+        name,
+        image
+      },
+      categories[]->,
+      body
+    }
+  `);
+	
+  return posts.map((post: any) => ({
+		params: { slug: post.slug },
+		props: post,
+	}));
+}
+type Props = CollectionEntry<'blog'>;
+
+const post = Astro.props as any;
+
+// Fetch all posts for navigation
+const allPosts = await client.fetch(`
+  *[_type == "post"] | order(publishedAt desc) {
+    "slug": slug.current,
+    title,
+    publishedAt
+  }
+`);
+
+// Sort by date descending for navigation
+const sorted = allPosts.slice().sort((a: any, b: any) => {
+  const dateA = a.publishedAt ? new Date(a.publishedAt) : new Date(0);
+  const dateB = b.publishedAt ? new Date(b.publishedAt) : new Date(0);
+  return +dateB - +dateA;
+});
+const index = sorted.findIndex((p: any) => p.slug === post.slug);
+const prev = index < sorted.length - 1 ? { id: sorted[index + 1].slug, title: sorted[index + 1].title } : null;
+const next = index > 0 ? { id: sorted[index - 1].slug, title: sorted[index - 1].title } : null;
+
+// Calculate reading time
+const readingTimeMin = Math.ceil((post.body ? JSON.stringify(post.body).length / 5 / 180 : 0)) || 5;
+
+// Transform post data to match BlogPost layout expectations
+const postData = {
+  title: post.title,
+  description: post.description,
+  pubDate: post.publishedAt ? new Date(post.publishedAt) : new Date(),
+  author: post.author?.name,
+  tags: post.categories?.map((cat: any) => cat.title) || [],
+};
+
+// Portable Text components
+const components = {
+  types: {
+    image: SanityImage,
+    code: SanityCode,
+  },
+};
+---
+
+<BlogPost {...postData} prevPost={prev} nextPost={next} readingTimeMin={readingTimeMin}>
+  <PortableText 
+    value={post.body} 
+    components={{
+      type: {
+        image: SanityImage,
+        code: SanityCode
+      }
+    }} 
+  />
+</BlogPost>

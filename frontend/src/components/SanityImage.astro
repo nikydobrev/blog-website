@@ -1,0 +1,32 @@
+---
+import imageUrlBuilder from '@sanity/image-url';
+import { client } from '../sanity.ts';
+
+// Props from PortableText for images
+const { node } = Astro.props;
+const { asset, alt, caption } = node;
+
+const builder = imageUrlBuilder(client);
+
+function urlForImage(source: any) {
+  return builder.image(source).auto('format').fit('max');
+}
+
+const imageUrl = asset ? urlForImage(asset).width(800).height(450).url() : '';
+const altText = alt || caption || 'Image';
+---
+
+{imageUrl && (
+  <figure class="my-6">
+    <img 
+      src={imageUrl}
+      alt={altText}
+      class="w-full h-auto rounded-lg shadow-lg"
+    />
+    {caption && (
+      <figcaption class="text-center text-sm text-gray-600 mt-2 italic">
+        {caption}
+      </figcaption>
+    )}
+  </figure>
+)}

@@ -1,0 +1,66 @@
+---
+import { codeToHtml } from 'shiki';
+
+// Props from PortableText for code blocks
+const { node } = Astro.props;
+const { code, language, filename } = node;
+
+// Map some common language names to Shiki-supported ones
+const languageMap: { [key: string]: string } = {
+  'golang': 'go',
+  'js': 'javascript',
+  'ts': 'typescript',
+  'jsx': 'jsx',
+  'tsx': 'tsx',
+  'py': 'python',
+  'sh': 'bash',
+  'shell': 'bash',
+  'yml': 'yaml'
+};
+
+const mappedLanguage = languageMap[language] || language || 'text';
+let highlightedCode = '';
+
+try {
+  highlightedCode = await codeToHtml(code || '', {
+    lang: mappedLanguage,
+    theme: 'github-dark'
+  });
+} catch (error) {
+  // Fallback for unsupported languages
+  console.warn(`Unsupported language: ${mappedLanguage}`);
+  highlightedCode = await codeToHtml(code || '', {
+    lang: 'text',
+    theme: 'github-dark'
+  });
+}
+---
+
+<div class="code-block my-6">
+  {filename && (
+    <div class="bg-gray-800 text-white px-4 py-2 text-sm font-mono border-b border-gray-700">
+      {filename}
+    </div>
+  )}
+  <div class="overflow-x-auto">
+    <Fragment set:html={highlightedCode} />
+  </div>
+</div>
+
+<style>
+  .code-block {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #0d1117;
+  }
+  
+  .code-block pre {
+    margin: 0 !important;
+    padding: 1rem !important;
+    background: transparent !important;
+  }
+  
+  .code-block code {
+    font-family: 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+  }
+</style>

@@ -1,0 +1,75 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/sections/Footer.astro';
+import Header from '../../components/sections/Header.astro';
+import BlogHero from '../../components/sections/BlogHero.astro';
+import BlogAllArticles from '../../components/sections/BlogAllArticles.astro';
+import BlogPagination from '../../components/ui/nav/BlogPagination.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import FeaturedPost from '../../components/ui/card/FeaturedPost.astro';
+import { calculateReadingTimeFromHtml } from '../../lib/reading';
+import { client } from '../../sanity.ts';
+
+const PAGE_SIZE = 6;
+
+// Fetch posts from Sanity
+const sanityPosts = await client.fetch(`
+  *[_type == "post"] | order(publishedAt desc) {
+    _id,
+    title,
+    slug,
+    publishedAt,
+    description,
+    "estimatedReadingTime": round(length(pt::text(body)) / 5 / 180 ),
+    mainImage,
+    author->{
+      name,
+      image
+    },
+    categories[]->
+  }
+`);
+
+// Transform Sanity posts to match the theme's expected format
+const posts = sanityPosts.map((post: any) => ({
+  id: post.slug.current,
+  data: {
+    title: post.title,
+    description: post.description,
+    pubDate: post.publishedAt ? new Date(post.publishedAt) : new Date(),
+    author: post.author?.name,
+    tags: post.categories?.map((cat: any) => cat.title) || [],
+  },
+  readingTimeMin: post.estimatedReadingTime || 5
+}));
+const [featured, ...rest] = posts;
+const firstPagePosts = rest.slice(0, PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
+const featuredReading = featured?.readingTimeMin || 0;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark" class="dark">
+	<head>
+    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+    {totalPages > 1 && (
+      <link rel="next" href={`/blog/page/2/`} />
+    )}
+	</head>
+	<body>
+        <Header />
+        <BlogHero title="Blog" subtitle="Practical insights on data analysis, visualization, and getting more from your analytics tools." />
+        <main class="use-utility-layout mx-auto max-w-5xl px-3 py-5 space-y-7">
+            {featured && (
+              <section class="card-surface p-4 md:p-5 hover-lift sw-featured-card">
+                <FeaturedPost post={featured} readingTimeMin={featuredReading} />
+              </section>
+            )}
+
+            <BlogAllArticles posts={firstPagePosts} />
+            <BlogPagination currentPage={1} totalPages={totalPages} />
+        </main>
+        <Footer />
+	</body>
+</html>

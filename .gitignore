@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build artifacts
+dist/
+build/
+.astro/
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Cache
+.cache/
+.parcel-cache/
+.vite/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Sanity specific
+sanity-blog/.sanity/
+sanity-blog/node_modules/
+sanity-blog/dist/
+
+# Frontend specific
+frontend/node_modules/
+frontend/dist/
+frontend/.astro/
+
+# Optional: Exclude package-lock.json (uncomment if you prefer yarn.lock)
+# package-lock.json
